@@ -29,8 +29,14 @@ export const getDashboardStats = async (req, res) => {
         const last60DaysIncomeTransactions = await Income.find({
             userId,
             receivedDate: { $gte: sixtyDaysAgo }
-        }).sort({ date: -1 });
-        const incomeLast60Days = last60DaysIncomeTransactions.reduce(
+        }).sort({ receivedDate: -1 });
+
+        const last60DaysIncome = last60DaysIncomeTransactions.map((txn) => ({
+            date: txn.receivedDate.toISOString().split("T")[0], // 'YYYY-MM-DD'
+            value: txn.amount,
+            name: txn.source
+        }));
+        const totalIncomeLast60Days = last60DaysIncomeTransactions.reduce(
             (sum, transaction) => sum + transaction.amount, 0
         );
 
@@ -38,21 +44,23 @@ export const getDashboardStats = async (req, res) => {
         const last30DaysExpenseTransactions = await Expense.find({
             userId,
             spentDate: { $gte: thirtyDaysAgo }
-        }).sort({ date: -1 });
+        }).sort({ spentDate: -1 });
         const expenseLast30Days = last30DaysExpenseTransactions.reduce(
             (sum, transaction) => sum + transaction.amount, 0
         );
 
         const lastTransactions = [
-            ...(await Income.find({ userId }).sort({ date: -1 }).limit(5)).map((txn) => ({
+            ...(await Income.find({ userId }).sort({ receivedDate: -1 }).limit(5)).map((txn) => ({
                 ...txn.toObject(),
-                type: "income"
+                type: "income",
+                date: txn.receivedDate,
             })),
-            ...(await Expense.find({ userId }).sort({ date: -1 }).limit(5)).map((txn) => ({
+            ...(await Expense.find({ userId }).sort({ spentDate: -1 }).limit(5)).map((txn) => ({
                 ...txn.toObject(),
-                type: "expense"
+                type: "expense",
+                date: txn.spentDate,
             }))
-        ].sort((a, b) => b.date - a.date);  // latest first
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));  // latest first
 
         res.status(200).json({
             message: "Dashboard data fetched successfully",
@@ -65,8 +73,9 @@ export const getDashboardStats = async (req, res) => {
                     transaction: last30DaysExpenseTransactions
                 },
                 last60DaysIncomeTransactions: {
-                    total: incomeLast60Days,
-                    transaction: last60DaysIncomeTransactions
+                    total: totalIncomeLast60Days,
+                    transaction: last60DaysIncomeTransactions,
+                    incomeLast60Days: last60DaysIncome
                 },
                 recentTransaction: lastTransactions
             }

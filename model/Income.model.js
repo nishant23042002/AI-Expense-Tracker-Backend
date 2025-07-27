@@ -46,6 +46,10 @@ const incomeSchema = new mongoose.Schema({
     },
     aiCategorySuggestion: String,
     aiRecommendation: String,
+    type: {
+        type: String,
+        default: "income"
+    },
     inputMethod: {
         type: String,
         default: "manual"

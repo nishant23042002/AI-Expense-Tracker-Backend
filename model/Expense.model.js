@@ -68,6 +68,11 @@ const expenseSchema = new mongoose.Schema({
         default: "manual",
     },
 
+    type: {
+        type: String,
+        default: "expense"
+    },
+
     receiptImage: {
         type: String, // Cloudinary URL if OCR-based input
     },
