@@ -5,19 +5,19 @@ import userRoutes from "./routes/userRoute.route.js"
 import incomeRoutes from "./routes/incomeRoute.route.js"
 import expenseRoutes from "./routes/expenseRoute.route.js"
 import dashboardRoutes from "./routes/dashboardRoute.route.js"
-import setGoalRoutes from "./routes/setGoalRoute.route.js"
+import cookieParser from "cookie-parser";
 import dotenv from "dotenv"
 
 dotenv.config();
 
 const app = express();
-
 app.use(cors({
-    origin: 'http://localhost:5173',
+    origin: 'http://localhost:5174',
     credentials: true
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({
     extended: true
 }));
@@ -31,7 +31,7 @@ app.use("/api/v1/user", userRoutes);
 app.use("/api/v1/income", incomeRoutes);
 app.use("/api/v1/expense", expenseRoutes);
 app.use("/api/v1/dashboard", dashboardRoutes);
-app.use("/api/v1/goal", setGoalRoutes);
+
 
 
 const PORT = process.env.PORT || 8080

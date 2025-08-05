@@ -65,5 +65,19 @@ userSchema.methods.generateAccessToken = function () {
     )
 }
 
+userSchema.methods.generateRefreshToken = function () {
+    //generating token while registering user
+    return jwt.sign(
+        {
+            userId: this._id,
+            role: this.role
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
+
 const User = mongoose.model("User", userSchema)
 export default User

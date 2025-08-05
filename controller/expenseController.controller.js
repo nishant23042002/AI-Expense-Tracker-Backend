@@ -124,7 +124,7 @@ export const addExpense = async (req, res) => {
             title,
             amount,
             spentDate,
-            icon: `generating icon based on ${title}`,
+            icon: "🔄",
             aiRecommendation: "Generating AI response",
             inputMethod: "manual",
         });
@@ -202,22 +202,35 @@ export const addExpense = async (req, res) => {
                     messages: [
                         {
                             role: "system",
-                            content: "You are an assistant that helps users log their personal expenses with clear, concise notes. The note should summarize the expense based on what it was for, how much was spent, and when. Make it sound natural and helpful, like a journal entry or description."
+                            content: `You are an assistant that writes short, clear, and friendly expense notes for personal finance records.
+                                        Your job is to:
+                                        - Summarize the expense in **one natural-sounding sentence**.
+                                        - Mention what it was for, how much was spent, and when.
+                                        - Avoid repeating the title or category exactly unless necessary.
+                                        - Use plain, everyday language (like a quick journal note).
+                                        - Keep it relevant and under 20 words.`
                         },
                         {
                             role: "user",
                             content: `
-                                        Generate a one-sentence note for an expense record with the following details:
+                                        Create a one-sentence expense note with these details:
                                         - Title: "${title}"
                                         - Amount: ₹${amount}
-                                        - Category: "${expense.category}"
+                                        - Category: "${aiCategorySuggestion}"
                                         - Spent Date: ${spentDate}
-                                        The note should clearly explain what the expense was for, how much was spent, and when. Keep it human-friendly, avoid repetition, and limit it to one sentence.
-                                    `
+
+                                        Format:
+                                        <Sentence describing the expense naturally>"
+
+                                        Example:
+                                        "Bought groceries for the week on 5th Aug for ₹2,500.
+                                        `
                         }
                     ]
                 });
+
                 const notes = noteSuggestion.choices[0].message.content.trim();
+
 
                 // Step 4: Update the expense with AI-generated fields
                 await Expense.findByIdAndUpdate(expense._id, {
@@ -252,6 +265,144 @@ export const getUserExpenses = async (req, res) => {
     }
 }
 
+export const editExpense = async (req, res) => {
+    const { id } = req.params;
+    const { title, amount, spentDate, icon, category, notes } = req.body;
+
+    try {
+        // Find the existing expense first
+        const existingExpense = await Expense.findById(id);
+        if (!existingExpense) {
+            return res.status(404).json({
+                message: "Expense not found. Update failed.",
+            });
+        }
+
+        // Build update object
+        const updateFields = {};
+        if (title) updateFields.title = title;
+        if (amount) updateFields.amount = amount;
+        if (spentDate) updateFields.spentDate = spentDate;
+        if (icon) updateFields.icon = icon;
+        if (category) updateFields.category = category;
+        if (notes) updateFields.notes = notes;
+
+        let runAIUpdate = false;
+
+        // Check if AI fields should be updated (title or amount changed)
+        if ((title && title !== existingExpense.title) || (amount && amount !== existingExpense.amount)) {
+            runAIUpdate = true;
+        }
+
+        // Update basic fields first
+        let updatedExpense = await Expense.findByIdAndUpdate(
+            id,
+            { $set: updateFields },
+            { new: true }
+        );
+
+        // If title or amount changed → regenerate AI suggestions
+        if (runAIUpdate) {
+            try {
+                const aiCategory = await openai.chat.completions.create({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "user",
+                            content: `Classify the expense source: "${updatedExpense.title}" into one of the following categories: 
+                                        "Food & Dining", "Transportation", "Housing", "Utilities", "Insurance",
+                                        "Medical & Healthcare", "Entertainment", "Shopping", "Debt", "Education",
+                                        "Travel", "Gifts & Donations", "Subscriptions", "Taxes", "Other". 
+                                        Return only a single category name.`,
+                        },
+                    ],
+                });
+                const aiCategorySuggestion = aiCategory.choices[0].message.content.trim();
+
+                const aiIcon = await openai.chat.completions.create({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "user",
+                            content: `You are an intelligent finance assistant.
+                            Suggest an appropriate single emoji to represent the following expense:
+                            "${updatedExpense.title}"
+                            - Single emoji only
+                            - No text or multiple emojis
+                            - Relevant to the expense`,
+                        },
+                    ],
+                });
+                const iconSuggestion = aiIcon.choices[0].message.content.trim();
+
+                const aiTip = await openai.chat.completions.create({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a helpful assistant that gives short, practical money-saving tips."
+                        },
+                        {
+                            role: "user",
+                            content: `The user spent ₹${updatedExpense.amount} on "${updatedExpense.title}". Give one short actionable tip to reduce this type of expense.`
+                        },
+                    ],
+                });
+                const aiRecommendation = aiTip.choices[0].message.content.trim();
+
+                const noteSuggestion = await openai.chat.completions.create({
+                    model: "gpt-3.5-turbo",
+                    messages: [
+                        {
+                            role: "system",
+                            content: `You are an assistant that writes short, clear expense notes.
+                                        - Mention what it was for, how much was spent, and when.
+                                        - Keep it under 20 words.`
+                        },
+                        {
+                            role: "user",
+                            content: `Create a one-sentence expense note:
+                                        Title: "${updatedExpense.title}"
+                                        Amount: ₹${updatedExpense.amount}
+                                        Category: "${aiCategorySuggestion}"
+                                        Spent Date: ${updatedExpense.spentDate}`
+                        }
+                    ]
+                });
+                const notesAI = noteSuggestion.choices[0].message.content.trim();
+
+                updatedExpense = await Expense.findByIdAndUpdate(
+                    id,
+                    {
+                        $set: {
+                            category: aiCategorySuggestion,
+                            icon: iconSuggestion,
+                            aiRecommendation,
+                            notes: notesAI,
+                            isAICategorized: true,
+                        },
+                    },
+                    { new: true }
+                );
+            } catch (error) {
+                console.error("AI update failed:", error.message);
+            }
+        }
+
+        res.status(200).json({
+            message: runAIUpdate
+                ? "Expense updated successfully with AI-enhanced details."
+                : "Expense updated successfully.",
+            updatedExpense,
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            error: error.message,
+            message: "Something went wrong while updating expense.",
+        });
+    }
+};
 
 
 export const deleteExpense = async (req, res) => {

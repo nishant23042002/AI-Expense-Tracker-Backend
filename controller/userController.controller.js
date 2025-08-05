@@ -1,14 +1,17 @@
 import { uploadToCloudinary } from "../utils/cloudinary.service.js";
 import User from "../model/User.model.js";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv"
+dotenv.config();
 
 export const signUpUser = async (req, res) => {
     try {
         const { userName, email, password, isAgree, role } = req.body;
         console.log("req.file:", req.file);
 
-        const register = await User.findOne({email})
-        if(register){
-            return res.status(400).json({message: "Email already exists..."})
+        const register = await User.findOne({ email })
+        if (register) {
+            return res.status(400).json({ message: "Email already exists..." })
         }
         if (!req.file) {
             return res.status(400).json({ message: "No profile picture uploaded." });
@@ -77,11 +80,21 @@ export const loginUser = async (req, res) => {
         if (!matchPassword) {
             return res.status(401).json({ message: "Invalid Email or Password" })
         }
-        const token = user.generateAccessToken();
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        // ✅ Store refresh token in cookie
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production", // true in production
+            sameSite: "Strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         return res.status(201).json({
             message: "Login Successfully. WELCOME...",
-            token,
+            accessToken,
+            refreshToken,
             user: {
                 username: user.userName,
                 profilePic_URL: user.profile,
@@ -94,6 +107,37 @@ export const loginUser = async (req, res) => {
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 }
+
+// REFRESH ACCESS TOKEN
+export const refreshAccessToken = async (req, res) => {
+    const token = req?.cookies?.refreshToken;
+    if (!token) return res.status(401).json({ message: "Refresh token missing" });
+
+    try {
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        const user = await User.findById(decoded.userId);
+        if (!user) return res.status(401).json({ message: "User not found" });
+
+        const newAccessToken = user.generateAccessToken();
+        res.status(200).json({ accessToken: newAccessToken });
+    } catch (err) {
+        res.clearCookie("refreshToken");
+        res.status(403).json({ message: "Invalid or expired refresh token" });
+    }
+};
+
+
+// LOGOUT
+export const logoutUser = (req, res) => {
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        sameSite: "Strict",
+        secure: process.env.NODE_ENV === "production",
+    });
+    res.status(200).json({ message: "Logged out successfully" });
+};
+
+
 
 export const getAllUser = async (req, res) => {
     try {

@@ -19,6 +19,9 @@ export const protectedRoute = (req, res, next) => {
         // Pass control to the next middleware or route handler
         next();
     } catch (err) {
-        return res.status(403).json({ message: "Invalid or expired token." });
+        if (err.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Access token expired" });
+        }
+        return res.status(403).json({ message: "Invalid token" });
     }
 }
