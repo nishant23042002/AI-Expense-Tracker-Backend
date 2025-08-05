@@ -31,6 +31,7 @@ export const getDashboardStats = async (req, res) => {
             receivedDate: { $gte: sixtyDaysAgo }
         }).sort({ receivedDate: -1 });
 
+
         const last60DaysIncome = last60DaysIncomeTransactions.map((txn) => ({
             date: txn.receivedDate.toISOString().split("T")[0], // 'YYYY-MM-DD'
             value: txn.amount,
@@ -45,17 +46,19 @@ export const getDashboardStats = async (req, res) => {
             userId,
             spentDate: { $gte: thirtyDaysAgo }
         }).sort({ spentDate: -1 });
+
+
         const expenseLast30Days = last30DaysExpenseTransactions.reduce(
             (sum, transaction) => sum + transaction.amount, 0
         );
 
         const lastTransactions = [
-            ...(await Income.find({ userId }).sort({ receivedDate: -1 }).limit(5)).map((txn) => ({
+            ...(await Income.find({ userId }).sort({ receivedDate: -1 })).map((txn) => ({
                 ...txn.toObject(),
                 type: "income",
                 date: txn.receivedDate,
             })),
-            ...(await Expense.find({ userId }).sort({ spentDate: -1 }).limit(5)).map((txn) => ({
+            ...(await Expense.find({ userId }).sort({ spentDate: -1 })).map((txn) => ({
                 ...txn.toObject(),
                 type: "expense",
                 date: txn.spentDate,
@@ -69,11 +72,11 @@ export const getDashboardStats = async (req, res) => {
                 totalIncome: totalIncome,
                 totalExpense: totalExpense,
                 last30DaysExpenses: {
-                    total: expenseLast30Days,
+                    totalExpenseAmount: expenseLast30Days,
                     transaction: last30DaysExpenseTransactions
                 },
                 last60DaysIncomeTransactions: {
-                    total: totalIncomeLast60Days,
+                    totalIncomeAmount: totalIncomeLast60Days,
                     transaction: last60DaysIncomeTransactions,
                     incomeLast60Days: last60DaysIncome
                 },

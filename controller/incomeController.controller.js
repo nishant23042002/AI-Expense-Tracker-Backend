@@ -10,7 +10,7 @@ const openai = new OpenAI({
 export const addIncome = async (req, res) => {
     try {
         let userId = req.user.id;
-        const { source, amount } = req.body;
+        const { source, amount, receivedDate } = req.body;
         let aiCategorySuggestion = "";
         let aiRecommendation = "";
         let iconSuggestion = ""
@@ -67,9 +67,10 @@ export const addIncome = async (req, res) => {
         console.log("iconSuggestion based on category :", iconSuggestion);
 
         const newIncome = await Income.create({
+            userId,
             source,
             amount,
-            userId,
+            receivedDate,
             icon: iconSuggestion,
             category: aiCategorySuggestion,
             isAICategorized: true,

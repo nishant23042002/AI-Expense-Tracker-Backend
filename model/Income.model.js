@@ -37,7 +37,7 @@ const incomeSchema = new mongoose.Schema({
     },
     receivedDate: {
         type: Date,
-        default: Date.now,
+        required: true
     },
     notes: String,
     isAICategorized: {
