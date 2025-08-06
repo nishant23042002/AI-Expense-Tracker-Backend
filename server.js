@@ -1,5 +1,6 @@
 import express from "express"
 import cors from "cors"
+import path from "path"
 import { connectDB } from "./database/connectDB.js";
 import userRoutes from "./routes/userRoute.route.js"
 import incomeRoutes from "./routes/incomeRoute.route.js"
@@ -16,6 +17,8 @@ app.use(cors({
     credentials: true
 }));
 
+const __dirname = path.resolve()
+app.use(express.static(path.join(__dirname, "/client/dist")))
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({
