@@ -54,6 +54,11 @@ const incomeSchema = new mongoose.Schema({
         type: String,
         default: "manual"
     },
+    role: {
+        type: String,
+        enum: ["user", "admin"],
+        default: "user"
+    }
 }, { timestamps: true });
 
 const Income = mongoose.model("Income", incomeSchema);

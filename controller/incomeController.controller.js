@@ -1,4 +1,5 @@
 import Income from "../model/Income.model.js"
+import ExcelJS from "exceljs";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();
@@ -280,29 +281,6 @@ export const editIncome = async (req, res) => {
     }
 };
 
-
-export const downloadIncome = async (req, res) => {
-    try {
-        let { id, role } = req.user;
-        console.log("Requested by user:", id);
-
-        let allIncome;
-        if (role === "admin") {
-            // Admins get everything
-            allIncome = await Income.find();
-        } else {
-            // Normal users get only their own
-            allIncome = await Income.find({ userId: id });
-        }
-
-        if (allIncome.length === 0) {
-            return res.status(404).json({ message: "No income data found." });
-        }
-        res.status(200).json({ message: "All income: ", incomes: allIncome })
-    } catch (error) {
-        res.status(500).json({ error: error.message, message: "Something went wrong" })
-    }
-}
 
 
 export const editUserIncome = async (req, res) => {
