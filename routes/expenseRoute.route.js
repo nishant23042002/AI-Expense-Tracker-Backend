@@ -1,10 +1,8 @@
 import express from "express";
-import { upload } from "../middleware/multer.middleware.js";
 import {
     addExpense,
     getUserExpenses,
     deleteExpense,
-    extractAndAddFromReceipt,
     editExpense
 } from "../controller/expenseController.controller.js";
 import { protectedRoute } from "../middleware/protectedRoute.middleware.js";
