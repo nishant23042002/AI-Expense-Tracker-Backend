@@ -12,6 +12,7 @@ dotenv.config();
 
 const app = express();
 app.use(cors({
+    origin: 'monumental-croissant-01fad6.netlify.app',
     credentials: true
 }));
 
