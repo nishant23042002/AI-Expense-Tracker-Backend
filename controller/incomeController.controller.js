@@ -1,5 +1,4 @@
 import Income from "../model/Income.model.js"
-import ExcelJS from "exceljs";
 import OpenAI from "openai";
 import dotenv from "dotenv";
 dotenv.config();

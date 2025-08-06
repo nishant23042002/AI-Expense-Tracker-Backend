@@ -23,7 +23,5 @@ router.put("/editexpense/:id", protectedRoute, editExpense);
 // 4. Delete an expense
 router.delete("/:id", deleteExpense);
 
-// 5. Upload a receipt and auto-create expense via OCR
-router.post("/myexpense/upload-receipt", upload.single("receipt"), extractAndAddFromReceipt);
 
 export default router;

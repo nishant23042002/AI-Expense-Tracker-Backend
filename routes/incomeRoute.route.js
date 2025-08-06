@@ -11,6 +11,6 @@ router.put("/editincome/:id",protectedRoute, editIncome);
 router.delete("/:id", deleteIncome);
 router.patch("/editIncome/:id", editUserIncome);     // logic will write later
 
-// router.use(protectedRoute);
+
 
 export default router;
