@@ -86,10 +86,11 @@ export const loginUser = async (req, res) => {
         // ✅ Store refresh token in cookie
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production", // true in production
-            sameSite: "Strict",
+            secure: process.env.NODE_ENV === "production", // ensures true on Render
+            sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
             maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
         });
+
 
         return res.status(201).json({
             message: "Login Successfully. WELCOME...",
