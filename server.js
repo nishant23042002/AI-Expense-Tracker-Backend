@@ -10,8 +10,9 @@ import dotenv from "dotenv"
 
 dotenv.config();
 const allowedOrigins = [
-    'https://delicate-sunburst-af1b2e.netlify.app',
-    'http://localhost:5175'
+    "https://ai-expense-tracker-rp4b.onrender.com",
+    "http://localhost:5174/"
+
 ];
 
 const app = express();
