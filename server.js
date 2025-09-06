@@ -10,7 +10,7 @@ import dotenv from "dotenv"
 
 dotenv.config();
 const allowedOrigins = [
-    'https://exp3ns3-track3r.netlify.app',
+    'https://delicate-sunburst-af1b2e.netlify.app',
     'http://localhost:5175'
 ];
 
