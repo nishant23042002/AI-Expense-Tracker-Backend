@@ -9,10 +9,21 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv"
 
 dotenv.config();
+const allowedOrigins = [
+    'https://exp3ns3-track3r.netlify.app',
+    'http://localhost:5175'
+];
 
 const app = express();
+
 app.use(cors({
-    origin: 'https://exp3ns3-track3r.netlify.app',
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 
