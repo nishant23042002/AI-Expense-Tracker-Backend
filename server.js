@@ -9,23 +9,13 @@ import cookieParser from "cookie-parser";
 import dotenv from "dotenv"
 
 dotenv.config();
-const allowedOrigins = [
-    "https://ai-expense-tracker-rp4b.onrender.com",
-    "http://localhost:5174/"
-
-];
 
 const app = express();
 
 app.use(cors({
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true
+    origin: 'https://ai-expense-tracker-rp4b.onrender.com', // Frontend domain in production
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true // If you're sending cookies, tokens etc.
 }));
 
 app.use(express.json());
