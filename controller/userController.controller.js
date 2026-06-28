@@ -4,6 +4,28 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv"
 dotenv.config();
 
+const buildDefaultProfileImage = (userName = "User", email = "") => {
+    const displayName = userName.trim() || email.trim() || "User";
+    const initials = displayName
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((part) => part.match(/[a-z0-9]/i)?.[0]?.toUpperCase())
+        .filter(Boolean)
+        .join("") || "U";
+
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160">
+            <rect width="160" height="160" rx="80" fill="#7D5FFF"/>
+            <text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle"
+                font-family="Arial, Helvetica, sans-serif" font-size="56" font-weight="700" fill="#ffffff">
+                ${initials}
+            </text>
+        </svg>
+    `;
+
+    return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+};
+
 export const signUpUser = async (req, res) => {
     try {
         const { userName, email, password, isAgree, role } = req.body;
@@ -17,29 +39,26 @@ export const signUpUser = async (req, res) => {
             return res.status(400).json({ message: "No profile picture uploaded." });
         }
 
-        // Upload to Cloudinary
-        // const uploadToCloudinary = () =>
-        //     new Promise((resolve, reject) => {
-        //         const stream = cloudinary.uploader.upload_stream(
-        //             {
-        //                 folder: "profile_pictures",
-        //                 resource_type: "image",
-        //             },
-        //             (error, result) => {
-        //                 if (error) return reject(error);
-        //                 resolve(result);
-        //             }
-        //         );
-        //         stream.end(req.file.buffer);
-        //     });
-        const result = await uploadToCloudinary(req.file.buffer, "profile_pictures");
+        let profileUrl;
+
+        try {
+            const result = await uploadToCloudinary(req.file.buffer, "profile_pictures");
+            profileUrl = result.secure_url;
+        } catch (error) {
+            if (!error.isCloudinaryConfigError) {
+                throw error;
+            }
+
+            console.warn("Cloudinary upload skipped during signup:", error.message);
+            profileUrl = buildDefaultProfileImage(userName, email);
+        }
 
         const registerUser = await User.create({
             userName: userName,
             email: email,
             password: password,
             isAgree: isAgree,
-            profile: result.secure_url,
+            profile: profileUrl,
             role: role
         })
         if (!registerUser) {
