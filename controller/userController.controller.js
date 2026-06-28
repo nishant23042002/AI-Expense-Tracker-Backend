@@ -57,6 +57,13 @@ export const signUpUser = async (req, res) => {
         });
     } catch (error) {
         console.error("Signup error:", error);
+        if (error.isCloudinaryConfigError) {
+            return res.status(error.statusCode || 503).json({
+                message: "Profile image upload is not configured correctly.",
+                error: error.message,
+            });
+        }
+
         res.status(500).json({ message: "Internal Server Error", error: error.message });
     }
 };
