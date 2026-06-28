@@ -12,11 +12,35 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors({
-    origin: 'https://ai-expense-tracker-rp4b.onrender.com', // Frontend domain in production
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true // If you're sending cookies, tokens etc.
-}));
+const defaultAllowedOrigins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://ai-expense-tracker-rp4b.onrender.com",
+];
+
+const allowedOrigins = [...new Set([
+    ...defaultAllowedOrigins,
+    ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []),
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(",") : []),
+])]
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+const corsOptions = {
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options(/.*/, cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
